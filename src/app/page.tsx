@@ -1,7 +1,6 @@
 'use client'
-import AIAssistant from '@/components/AIAssistant'
 import Link from 'next/link'
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { 
   Wrench, 
@@ -22,7 +21,7 @@ import {
   ChevronDown,
   Play,
   Star,
-  ArrowUpRight
+  ArrowUpRight,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -30,13 +29,6 @@ interface FeatureCardProps {
   icon: LucideIcon
   title: string
   description: string
-  index: number
-}
-
-interface StatCardProps {
-  icon: LucideIcon
-  number: string
-  label: string
   index: number
 }
 
@@ -92,39 +84,10 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon: Icon, title, descriptio
   </motion.div>
 )
 
-const StatCard: React.FC<StatCardProps> = ({ icon: Icon, number, label, index }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.8 }}
-    whileInView={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.6, delay: index * 0.1, ease: "backOut" }}
-    viewport={{ once: true }}
-    whileHover={{ scale: 1.05 }}
-    className="text-center group bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300"
-  >
-    <motion.div
-      whileHover={{ rotate: 360 }}
-      transition={{ duration: 0.6 }}
-      className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors duration-300"
-    >
-      <Icon className="w-7 h-7 text-white" />
-    </motion.div>
-    <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ delay: 0.3 + index * 0.1 }}
-      className="text-3xl font-bold text-white mb-2"
-    >
-      {number}
-    </motion.div>
-    <div className="text-white/80 font-medium text-sm">{label}</div>
-  </motion.div>
-)
-
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { scrollYProgress } = useScroll()
   const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [0.95, 1])
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, -50])
   const { user, loading } = useAuth()
 
   const features = [
@@ -167,19 +130,6 @@ export default function Home() {
     { icon: CheckCircle, number: '2,500+', label: 'Issues Resolved' }
   ]
 
-  const testimonials = [
-    {
-      text: "IRCAD Assistant has revolutionized our technical support. Equipment downtime is now virtually eliminated.",
-      author: "Dr. Sarah Mukamana",
-      role: "Lead Surgeon, IRCAD Africa"
-    },
-    {
-      text: "The AI-powered troubleshooting guides have made our team 10x more efficient in resolving technical issues.",
-      author: "Jean Baptiste Ndayisenga",
-      role: "Technical Director"
-    }
-  ]
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -212,7 +162,7 @@ export default function Home() {
 
             {/* Enhanced Navigation */}
             <nav className="hidden lg:flex items-center space-x-8">
-              {['Dashboard', 'Guides', 'Knowledge Base', 'Support', 'Analytics'].map((item, index) => (
+              {['Dashboard', 'Guides', 'Knowledge Base', 'Support', 'Analytics'].map((item) => (
                 <motion.div
                   key={item}
                   whileHover={{ y: -2 }}
@@ -364,9 +314,9 @@ export default function Home() {
                 transition={{ delay: 0.6, duration: 0.8 }}
                 className="text-xl md:text-2xl text-gray-300 leading-relaxed max-w-2xl"
               >
-                Revolutionize technical operations with AI-powered diagnostics, 
+                Revolutionize technical operations with AI-powered diagnostics,
                 intelligent troubleshooting, and seamless equipment management for 
-                <span className="text-teal-300 font-semibold"> IRCAD Africa's world-class surgical training center</span>.
+                <span className="text-teal-300 font-semibold"> IRCAD Africa&apos;s world-class surgical training center</span>.
               </motion.p>
 
               {/* Key Benefits */}
@@ -376,8 +326,8 @@ export default function Home() {
                 transition={{ delay: 0.8, duration: 0.8 }}
                 className="grid md:grid-cols-2 gap-4"
               >
-                {[
-                  { icon: Zap, text: "Instant Problem Resolution" },
+                {[{
+                  icon: Zap, text: "Instant Problem Resolution" },
                   { icon: Shield, text: "Enterprise-Grade Security" },
                   { icon: Activity, text: "Real-Time Monitoring" },
                   { icon: TrendingUp, text: "Predictive Maintenance" }
@@ -496,8 +446,8 @@ export default function Home() {
                     {/* Recent alerts */}
                     <div className="space-y-3 pt-4">
                       <div className="text-white/60 text-sm">Recent Alerts</div>
-                      {[
-                        { type: "success", message: "Axiocam calibrated successfully" },
+                      {[{
+                        type: "success", message: "Axiocam calibrated successfully" },
                         { type: "warning", message: "Zen software update available" },
                         { type: "info", message: "Maintenance scheduled for Lab 2" }
                       ].map((alert, index) => (
@@ -622,7 +572,7 @@ export default function Home() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed"
             >
-              Revolutionary AI-powered solutions engineered specifically for IRCAD Africa's 
+              Revolutionary AI-powered solutions engineered specifically for IRCAD Africa&apos;s 
               world-class medical training environment. Experience the future of technical support.
             </motion.p>
           </motion.div>
@@ -669,8 +619,8 @@ export default function Home() {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { icon: Activity, number: "99.9%", label: "Equipment Uptime", detail: "Maximum reliability" },
+            {[{
+              icon: Activity, number: "99.9%", label: "Equipment Uptime", detail: "Maximum reliability" },
               { icon: Clock, number: "< 30s", label: "Response Time", detail: "Lightning fast support" },
               { icon: TrendingUp, number: "85%", label: "Efficiency Gain", detail: "Measurable improvement" },
               { icon: Users, number: "24/7", label: "Support Coverage", detail: "Always available" }
@@ -743,22 +693,20 @@ export default function Home() {
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-12">
-            {[
-              {
-                text: "IRCAD Assistant has revolutionized our technical support operations. Equipment downtime is now virtually eliminated, and our surgical training programs run seamlessly.",
-                author: "Dr. Sarah Mukamana",
-                role: "Lead Surgeon, IRCAD Africa",
-                avatar: "SM",
-                rating: 5
-              },
-              {
-                text: "The AI-powered diagnostic capabilities are incredible. Our technical team has become 10x more efficient in resolving complex equipment issues.",
-                author: "Jean Baptiste Ndayisenga",
-                role: "Technical Director, IRCAD Africa",
-                avatar: "JB",
-                rating: 5
-              }
-            ].map((testimonial, index) => (
+            {[{
+              text: "IRCAD Assistant has revolutionized our technical support operations. Equipment downtime is now virtually eliminated, and our surgical training programs run seamlessly.",
+              author: "Dr. Sarah Mukamana",
+              role: "Lead Surgeon, IRCAD Africa",
+              avatar: "SM",
+              rating: 5
+            },
+            {
+              text: "The AI-powered diagnostic capabilities are incredible. Our technical team has become 10x more efficient in resolving complex equipment issues.",
+              author: "Jean Baptiste Ndayisenga",
+              role: "Technical Director, IRCAD Africa",
+              avatar: "JB",
+              rating: 5
+            }].map((testimonial, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 50, scale: 0.95 }}
@@ -769,7 +717,7 @@ export default function Home() {
                 className="group relative bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all duration-500 border border-gray-100"
               >
                 {/* Quote decoration */}
-                <div className="absolute top-6 left-6 text-6xl text-teal-100 font-serif leading-none">"</div>
+                <div className="absolute top-6 left-6 text-6xl text-teal-100 font-serif leading-none">&quot;</div>
                 
                 {/* Stars */}
                 <div className="flex mb-6 relative z-10">
@@ -817,16 +765,14 @@ export default function Home() {
               rotate: [0, 180, 360],
             }}
             transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl"
-          />
+            className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl" />
           <motion.div
             animate={{
               scale: [1.2, 1, 1.2],
               rotate: [360, 180, 0],
             }}
             transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"
-          />
+            className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 text-center">
@@ -893,8 +839,8 @@ export default function Home() {
             viewport={{ once: true }}
             className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto"
           >
-            {[
-              { icon: Zap, text: "Instant Deployment" },
+            {[{
+              icon: Zap, text: "Instant Deployment" },
               { icon: Shield, text: "Enterprise Security" },
               { icon: Users, text: "24/7 Expert Support" }
             ].map((feature, index) => (
@@ -917,13 +863,11 @@ export default function Home() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-            className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl"
-          />
+            className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl" />
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-            className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"
-          />
+            className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-20">
@@ -952,15 +896,15 @@ export default function Home() {
                 </div>
                 
                 <p className="text-gray-400 leading-relaxed mb-8 max-w-md">
-                  Next-generation AI-powered technical support system for IRCAD Africa's 
+                  Next-generation AI-powered technical support system for IRCAD Africa&apos;s 
                   world-class surgical training facilities. Empowering medical excellence 
                   across the African continent.
                 </p>
 
                 {/* Key stats */}
                 <div className="grid grid-cols-3 gap-6">
-                  {[
-                    { number: "99.9%", label: "Uptime" },
+                  {[{
+                    number: "99.9%", label: "Uptime" },
                     { number: "24/7", label: "Support" },
                     { number: "2,500+", label: "Issues Resolved" }
                   ].map((stat, index) => (
@@ -981,28 +925,26 @@ export default function Home() {
             </div>
             
             {/* Navigation sections */}
-            {[
-              {
-                title: 'Platform',
-                links: [
-                  { name: 'Dashboard', href: '#', icon: Activity },
-                  { name: 'Troubleshooting', href: '#', icon: Wrench },
-                  { name: 'Knowledge Base', href: '#', icon: BookOpen },
-                  { name: 'Analytics', href: '#', icon: TrendingUp },
-                  { name: 'Support Tickets', href: '#', icon: AlertCircle }
-                ]
-              },
-              {
-                title: 'IRCAD Africa',
-                links: [
-                  { name: 'About Center', href: '#', icon: Users },
-                  { name: 'Training Programs', href: '#', icon: BookOpen },
-                  { name: 'Research', href: '#', icon: Search },
-                  { name: 'News & Events', href: '#', icon: Activity },
-                  { name: 'Contact', href: '#', icon: Users }
-                ]
-              }
-            ].map((section, sectionIndex) => (
+            {[{
+              title: 'Platform',
+              links: [
+                { name: 'Dashboard', href: '#', icon: Activity },
+                { name: 'Troubleshooting', href: '#', icon: Wrench },
+                { name: 'Knowledge Base', href: '#', icon: BookOpen },
+                { name: 'Analytics', href: '#', icon: TrendingUp },
+                { name: 'Support Tickets', href: '#', icon: AlertCircle }
+              ]
+            },
+            {
+              title: 'IRCAD Africa',
+              links: [
+                { name: 'About Center', href: '#', icon: Users },
+                { name: 'Training Programs', href: '#', icon: BookOpen },
+                { name: 'Research', href: '#', icon: Search },
+                { name: 'News & Events', href: '#', icon: Activity },
+                { name: 'Contact', href: '#', icon: Users }
+              ]
+            }].map((section, sectionIndex) => (
               <motion.div
                 key={section.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -1050,24 +992,29 @@ export default function Home() {
                   Ready to Get Started?
                 </h3>
                 <p className="text-gray-300 mb-6">
-                  Join IRCAD Africa's technical excellence initiative. Get instant access 
+                  Join IRCAD Africa&apos;s technical excellence initiative. Get instant access 
                   to our AI-powered support platform.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ 
+                      scale: 1.05, 
+                      boxShadow: "0 30px 60px rgba(20, 184, 166, 0.4)",
+                      y: -5 
+                    }}
                     whileTap={{ scale: 0.95 }}
                     className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center"
                   >
                     <Activity className="w-4 h-4 mr-2" />
-                    Launch Platform
+                    <span>Launch Platform</span>
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     className="border border-gray-600 text-gray-300 px-6 py-3 rounded-lg font-semibold hover:border-teal-400 hover:text-teal-400 transition-colors duration-200"
                   >
-                    Contact Support
+                    Schedule Demo
                   </motion.button>
                 </div>
               </div>
@@ -1117,8 +1064,8 @@ export default function Home() {
                 </div>
                 
                 <div className="flex space-x-4">
-                  {[
-                    { name: 'Privacy', href: '#' },
+                  {[{
+                    name: 'Privacy', href: '#' },
                     { name: 'Terms', href: '#' },
                     { name: 'Security', href: '#' }
                   ].map((link) => (

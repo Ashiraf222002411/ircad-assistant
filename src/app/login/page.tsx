@@ -2,10 +2,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, LogIn, Loader2, AlertCircle, Sparkles } from 'lucide-react'
+
+interface LoginError {
+  message: string;
+  field?: string;
+}
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -14,22 +18,25 @@ export default function LoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState<LoginError | null>(null)
 
   const { login } = useAuth()
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setError(null)
 
     try {
       await login(formData.email, formData.password)
       // Redirect is handled by AuthContext or elsewhere
       console.log('Login successful!')
-    } catch (err: any) {
-      setError(err?.message || 'Login failed')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError({ message: err?.message || 'Login failed' })
+      } else {
+        setError({ message: 'An unknown error occurred during login.' })
+      }
     } finally {
       setLoading(false)
     }
@@ -37,7 +44,7 @@ export default function LoginPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    if (error) setError('') // Clear error when user types
+    if (error) setError(null) // Clear error when user types
   }
 
   return (
@@ -67,7 +74,7 @@ export default function LoginPage() {
                 <div>
                   <h2 className="text-3xl font-bold mb-4">Welcome Back!</h2>
                   <p className="text-blue-100 text-lg leading-relaxed">
-                    Access your technical support hub with AI-powered assistance, 
+                    Access your technical support hub with AI-powered assistance,
                     comprehensive guides, and real-time collaboration tools.
                   </p>
                 </div>
@@ -116,7 +123,7 @@ export default function LoginPage() {
               {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-3">
                   <AlertCircle className="w-5 h-5 text-red-600" />
-                  <span className="text-red-700 text-sm">{error}</span>
+                  <span className="text-red-700 text-sm">{error.message}</span>
                 </div>
               )}
 
@@ -201,10 +208,10 @@ export default function LoginPage() {
                 </button>
 
                 <div className="text-center">
-                  <p className="text-gray-600">
-                    Don't have an account?{' '}
-                    <Link href="/register" className="font-medium text-teal-600 hover:text-teal-500">
-                      Create Account
+                  <p className="text-sm text-gray-600">
+                    Don&apos;t have an account?{' '}
+                    <Link href="/register" className="text-blue-600 hover:underline">
+                      Sign up
                     </Link>
                   </p>
                 </div>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
+import React from 'react'
 import Link from 'next/link'
-import { LogOut, User, Bell } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { Bell, User, LogOut } from 'lucide-react'
 
 export default function Header() {
   const { user, logout } = useAuth()

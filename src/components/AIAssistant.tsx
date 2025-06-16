@@ -1,12 +1,65 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader2, Camera, Image, Trash2, Eye, AlertCircle, Volume2, VolumeX, Play, Pause, Mic, MicOff, Sparkles, Search, Book, Wrench, Users, Shield, Phone, Video, FileText, Settings, ArrowRight, Minimize2, Maximize2, Plus, History, HelpCircle, Zap, BarChart3, User, Clock, Monitor, Square, StopCircle, Download, Copy, Terminal, Code, PlayCircle, CheckCircle, BookOpen, Filter, Star, ChevronRight, ExternalLink, Bookmark } from 'lucide-react'
+import Image from 'next/image'
+import { 
+  Send,
+  Mic,
+  StopCircle,
+  Image as ImageIcon,
+  Loader2,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Settings,
+  Info,
+  AlertCircle,
+  CheckCircle,
+  BookOpen,
+  Filter,
+  ChevronRight,
+  ExternalLink,
+  Camera,
+  Monitor,
+  Volume2,
+  MessageCircle,
+  Book,
+  Users,
+  Sparkles,
+  Plus,
+  History,
+  Search,
+  Bookmark,
+  Star,
+  ArrowRight,
+  User,
+  Download,
+  Pause,
+  Play,
+  Trash2,
+  Terminal,
+  Copy,
+  PlayCircle,
+  Zap,
+  Shield,
+  FileText,
+  Wrench
+} from 'lucide-react'
+
+// Add type declarations for speech recognition
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+  }
+}
+
+type SpeechRecognition = any;
+type SpeechRecognitionEvent = any;
 
 interface Message {
   id: number
-  text: string
-  isUser: boolean
+  role: 'user' | 'assistant'
+  content: string
   timestamp: Date
   image?: string
   imageAnalysis?: string
@@ -62,7 +115,8 @@ export default function EnhancedIRCADAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: `Hello! I'm Sofia, your IRCAD AI Assistant! 👋
+      role: 'assistant',
+      content: `Hello! I'm Sofia, your IRCAD AI Assistant! 👋
 
 I'm here to help you with any technical issues using:
 
@@ -81,7 +135,6 @@ I can assist with:
 • Any other technical challenges
 
 How can I help you today? Feel free to speak, type, share your screen, or show me a picture! ✨`,
-      isUser: false,
       timestamp: new Date()
     }
   ])
@@ -112,46 +165,46 @@ How can I help you today? Feel free to speak, type, share your screen, or show m
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] = useState<string>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   const quickHelpCategories: QuickHelpCategory[] = [
     {
-      icon: <Camera className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "Equipment Issues",
       description: "Camera, screen, hardware problems",
       color: "bg-red-50 hover:bg-red-100 border-red-200 text-red-700",
       examples: ["Camera not working", "Black screen issue", "Equipment damage"]
     },
     {
-      icon: <Wrench className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "Software Problems", 
       description: "App won't open, computer is slow, software crashes",
       color: "bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700",
       examples: ["Zen software crash", "Computer freezing", "App won't start"]
     },
     {
-      icon: <Shield className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "Network Issues",
       description: "WiFi, connectivity, internet problems",
       color: "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700", 
       examples: ["No internet", "WiFi not working", "Connection slow"]
     },
     {
-      icon: <Book className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "Training & Guides",
       description: "Equipment tutorials, user manuals, procedures",
       color: "bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700",
       examples: ["How to use laparoscope", "Axiocam setup", "Training materials"]
     },
     {
-      icon: <Users className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "Access & Login", 
       description: "Password issues, login problems, account access",
       color: "bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-700",
       examples: ["Forgot password", "Can't login", "Account locked"]
     },
     {
-      icon: <Sparkles className="w-5 h-5" />,
+      icon: <ImageIcon className="w-5 h-5" />,
       title: "General Help",
       description: "Any other questions or technical support",
       color: "bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700",
@@ -160,11 +213,11 @@ How can I help you today? Feel free to speak, type, share your screen, or show m
   ]
 
   const knowledgeCategories: KnowledgeCategory[] = [
-    { id: 'all', name: 'All Articles', icon: <BookOpen className="w-4 h-4" />, color: 'text-gray-600', articleCount: 42 },
-    { id: 'equipment', name: 'Medical Equipment', icon: <Camera className="w-4 h-4" />, color: 'text-red-600', articleCount: 15 },
-    { id: 'software', name: 'Software & Applications', icon: <Wrench className="w-4 h-4" />, color: 'text-blue-600', articleCount: 12 },
-    { id: 'network', name: 'Network & Connectivity', icon: <Shield className="w-4 h-4" />, color: 'text-emerald-600', articleCount: 8 },
-    { id: 'procedures', name: 'Procedures & Protocols', icon: <FileText className="w-4 h-4" />, color: 'text-purple-600', articleCount: 7 }
+    { id: 'all', name: 'All Articles', icon: <ImageIcon className="w-4 h-4" />, color: 'text-gray-600', articleCount: 42 },
+    { id: 'equipment', name: 'Medical Equipment', icon: <ImageIcon className="w-4 h-4" />, color: 'text-red-600', articleCount: 15 },
+    { id: 'software', name: 'Software & Applications', icon: <ImageIcon className="w-4 h-4" />, color: 'text-blue-600', articleCount: 12 },
+    { id: 'network', name: 'Network & Connectivity', icon: <ImageIcon className="w-4 h-4" />, color: 'text-emerald-600', articleCount: 8 },
+    { id: 'procedures', name: 'Procedures & Protocols', icon: <ImageIcon className="w-4 h-4" />, color: 'text-purple-600', articleCount: 7 }
   ]
 
   const knowledgeArticles: KnowledgeArticle[] = [
@@ -239,7 +292,7 @@ This guide will walk you through the complete calibration process for Axiocam ca
 **Solutions**:
 1. Run as Administrator
 2. Check Windows compatibility mode
-3. Clear temporary files: C:\\Users\\[username]\\AppData\\Local\\Zeiss
+3. Clear temporary files: C:\Users\[username]\AppData\Local\Zeiss
 4. Reinstall Visual C++ Redistributables
 
 ### Performance Issues
@@ -558,14 +611,14 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
   useEffect(() => {
     if (voiceEnabled && messages.length > 0 && lastInputWasVoice) {
       const lastMessage = messages[messages.length - 1]
-      if (!lastMessage.isUser && lastMessage.id !== 1) {
+      if (lastMessage.role !== 'user' && lastMessage.id !== 1) {
         setTimeout(() => {
-          speakText(lastMessage.text, lastMessage.id)
+          speakText(lastMessage.content, lastMessage.id)
         }, 800)
       }
       setLastInputWasVoice(false)
     }
-  }, [messages, voiceEnabled, lastInputWasVoice])
+  }, [messages, voiceEnabled, lastInputWasVoice, speakText])
 
   // Voice Recognition Setup
   useEffect(() => {
@@ -581,7 +634,7 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
         setIsListening(true)
       }
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript
         setInput(transcript)
         setIsListening(false)
@@ -642,8 +695,8 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
       // Add message about screen sharing
       const shareMessage: Message = {
         id: Date.now(),
-        text: "🖥️ Screen sharing started! Sofia can now see your screen and help with real-time troubleshooting. I'll analyze what you're showing me every few seconds.",
-        isUser: false,
+        role: 'assistant',
+        content: "🖥️ Screen sharing started! Sofia can now see your screen and help with real-time troubleshooting. I'll analyze what you're showing me every few seconds.",
         timestamp: new Date()
       }
       setMessages(prev => [...prev, shareMessage])
@@ -664,8 +717,8 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
 
     const stopMessage: Message = {
       id: Date.now(),
-      text: "🖥️ Screen sharing stopped. Thanks for letting me see your screen! If you need more help, feel free to start sharing again or ask me any questions.",
-      isUser: false,
+      role: 'assistant',
+      content: "🖥️ Screen sharing stopped. Thanks for letting me see your screen! If you need more help, feel free to start sharing again or ask me any questions.",
       timestamp: new Date()
     }
     setMessages(prev => [...prev, stopMessage])
@@ -728,8 +781,8 @@ Be helpful and provide actionable insights. Focus on what you can actually see i
 
         const analysisMessage: Message = {
           id: Date.now(),
-          text: `📊 Screen Analysis: ${data.response}`,
-          isUser: false,
+          role: 'assistant',
+          content: `📊 Screen Analysis: ${data.response}`,
           timestamp: new Date(),
           imageAnalysis: 'Screen analyzed'
         }
@@ -767,8 +820,8 @@ Be helpful and provide actionable insights. Focus on what you can actually see i
       // Add error message to chat
       const errorMessage: Message = {
         id: Date.now(),
-        text: "I had trouble analyzing the screen capture. Please make sure you're sharing your screen and try again.",
-        isUser: false,
+        role: 'assistant',
+        content: "I had trouble analyzing the screen capture. Please make sure you're sharing your screen and try again.",
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -819,8 +872,8 @@ Format each solution clearly with headers and explanations.`
 
         const fixMessage: Message = {
           id: Date.now(),
-          text: `🔧 Automated Fix Generated: ${data.response}`,
-          isUser: false,
+          role: 'assistant',
+          content: `🔧 Automated Fix Generated: ${data.response}`,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, fixMessage])
@@ -931,8 +984,8 @@ Format each solution clearly with headers and explanations.`
 
     const userMessage: Message = {
       id: Date.now(),
-      text: finalMessage,
-      isUser: true,
+      role: 'user',
+      content: finalMessage,
       timestamp: new Date(),
       image: selectedImage || undefined
     }
@@ -972,8 +1025,8 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
 
       const aiMessage: Message = {
         id: Date.now() + 1,
-        text: data.response,
-        isUser: false,
+        role: 'assistant',
+        content: data.response,
         timestamp: new Date(),
         imageAnalysis: imageData ? 'Image analyzed' : undefined
       }
@@ -984,8 +1037,8 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
       console.error('AI Error:', error)
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: 'Oops! I had a little trouble with that request. Please check your connection and try again. If this keeps happening, let me know and I\'ll help you contact IT support! 😊',
-        isUser: false,
+        role: 'assistant',
+        content: 'Oops! I had a little trouble with that request. Please check your connection and try again. If this keeps happening, let me know and I\'ll help you contact IT support! 😊',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -1017,8 +1070,8 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
   const startNewChat = () => {
     setMessages([{
       id: 1,
-      text: "Hello! I'm Sofia, your IRCAD AI Assistant! How can I help you with your technical challenges today? ✨",
-      isUser: false,
+      role: 'assistant',
+      content: "Hello! I'm Sofia, your IRCAD AI Assistant! How can I help you with your technical challenges today? ✨",
       timestamp: new Date()
     }])
     setActiveTab('chat')
@@ -1031,15 +1084,16 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
         <button
           onClick={() => setIsOpen(true)}
           className="group w-16 h-16 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600 rounded-full text-white shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 relative overflow-hidden"
+          title="Open AI Assistant"
         >
           <div className="relative z-10">
-            <MessageCircle className="w-8 h-8 mx-auto" />
+            <ImageIcon className="w-8 h-8 mx-auto" />
           </div>
           <div className="flex absolute top-1 right-1 space-x-0.5">
-            <Camera className="w-3 h-3 bg-green-400 rounded-full p-0.5" />
-            {voiceEnabled && <Volume2 className="w-3 h-3 bg-teal-400 rounded-full p-0.5" />}
-            <Mic className="w-3 h-3 bg-cyan-400 rounded-full p-0.5" />
-            {isScreenSharing && <Monitor className="w-3 h-3 bg-orange-400 rounded-full p-0.5" />}
+            <Camera className="w-3 h-3 bg-green-400 rounded-full p-0.5" aria-hidden="true" />
+            {voiceEnabled && <Volume2 className="w-3 h-3 bg-teal-400 rounded-full p-0.5" aria-hidden="true" />}
+            <Mic className="w-3 h-3 bg-cyan-400 rounded-full p-0.5" aria-hidden="true" />
+            {isScreenSharing && <Monitor className="w-3 h-3 bg-orange-400 rounded-full p-0.5" aria-hidden="true" />}
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-teal-300 to-cyan-300 rounded-full animate-ping opacity-40"></div>
         </button>
@@ -1053,7 +1107,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
       <div className="fixed bottom-6 right-6 z-50">
         <div className="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-lg shadow-lg p-3 flex items-center space-x-3">
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+            <ImageIcon className="w-5 h-5 text-white" aria-hidden="true" />
           </div>
           <div className="text-white">
             <p className="text-sm font-medium">Sofia - IRCAD Assistant</p>
@@ -1064,7 +1118,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
             className="p-1 text-white hover:bg-white/20 rounded transition-colors"
             title="Minimize window"
           >
-            <Maximize2 className="w-4 h-4" />
+            <ImageIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsOpen(false)}
@@ -1092,7 +1146,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
           <div className="p-2 border-b border-gray-200">
             <div className="flex items-center space-x-2 mb-2">
               <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-md flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+                <ImageIcon className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="font-bold text-gray-900 text-xs">Sofia</h3>
@@ -1103,8 +1157,9 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
             <button
               onClick={startNewChat}
               className="w-full flex items-center space-x-1 px-2 py-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-md hover:from-teal-600 hover:to-emerald-600 transition-colors text-xs"
+              title="Start new chat"
             >
-              <Plus className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
               <span>New Chat</span>
             </button>
           </div>
@@ -1119,7 +1174,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <MessageCircle className="w-3 h-3 mx-auto mb-0.5" />
+              <ImageIcon className="w-3 h-3 mx-auto mb-0.5" />
               Chat
             </button>
             <button
@@ -1130,7 +1185,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <History className="w-3 h-3 mx-auto mb-0.5" />
+              <ImageIcon className="w-3 h-3 mx-auto mb-0.5" />
               History
             </button>
             <button
@@ -1141,7 +1196,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <BookOpen className="w-3 h-3 mx-auto mb-0.5" />
+              <ImageIcon className="w-3 h-3 mx-auto mb-0.5" />
               Knowledge
             </button>
             <button
@@ -1152,7 +1207,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Settings className="w-3 h-3 mx-auto mb-0.5" />
+              <ImageIcon className="w-3 h-3 mx-auto mb-0.5" />
               Settings
             </button>
           </div>
@@ -1200,7 +1255,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               <div className="space-y-2">
                 {/* Search */}
                 <div className="relative">
-                  <Search className="w-3 h-3 absolute left-2 top-2 text-gray-400" />
+                  <ImageIcon className="w-3 h-3 absolute left-2 top-2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search knowledge base..."
@@ -1246,7 +1301,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                     >
                       <div className="flex items-start justify-between mb-1">
                         <h5 className="text-xs font-medium text-gray-900 leading-tight">{article.title}</h5>
-                        {article.bookmarked && <Bookmark className="w-3 h-3 text-yellow-500 fill-current" />}
+                        {article.bookmarked && <ImageIcon className="w-3 h-3 text-yellow-500 fill-current" />}
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
                         <span>{article.difficulty}</span>
@@ -1254,7 +1309,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                         <span>{article.estimatedTime}</span>
                         <span>•</span>
                         <div className="flex items-center">
-                          <Star className="w-2.5 h-2.5 text-yellow-400 fill-current mr-0.5" />
+                          <ImageIcon className="w-2.5 h-2.5 text-yellow-400 fill-current mr-0.5" />
                           <span>{article.rating}</span>
                         </div>
                       </div>
@@ -1275,6 +1330,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                       className={`w-6 h-3 rounded-full transition-colors ${
                         voiceEnabled ? 'bg-teal-500' : 'bg-gray-300'
                       }`}
+                      title={voiceEnabled ? "Turn off voice responses" : "Turn on voice responses"}
                     >
                       <div className={`w-2 h-2 bg-white rounded-full transition-transform ${
                         voiceEnabled ? 'translate-x-3' : 'translate-x-0.5'
@@ -1318,11 +1374,11 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                 className="p-1 hover:bg-white/20 rounded transition-colors"
                 title="Show sidebar"
               >
-                <ArrowRight className="w-4 h-4" />
+                <ImageIcon className="w-4 h-4" />
               </button>
             )}
             <div className="flex items-center space-x-2">
-              <User className="w-4 h-4" />
+              <ImageIcon className="w-4 h-4" aria-hidden="true" />
               <div>
                 <h3 className="font-bold text-sm">Sofia</h3>
                 <p className="text-xs opacity-90 flex items-center space-x-1">
@@ -1335,10 +1391,10 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
           
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1">
-              {voiceEnabled && <Volume2 className="w-3 h-3" />}
-              <Camera className="w-3 h-3" />
-              <Mic className="w-3 h-3" />
-              {isScreenSharing && <Monitor className="w-3 h-3 text-orange-300" />}
+              {voiceEnabled && <ImageIcon className="w-3 h-3" aria-hidden="true" />}
+              <ImageIcon className="w-3 h-3" aria-hidden="true" />
+              <ImageIcon className="w-3 h-3" aria-hidden="true" />
+              {isScreenSharing && <ImageIcon className="w-3 h-3 text-orange-300" aria-hidden="true" />}
             </div>
             <div className="w-px h-4 bg-white/30 mx-1"></div>
             <button
@@ -1346,14 +1402,14 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title="Minimize window"
             >
-              <Minimize2 className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
             </button>
             <button
               onClick={toggleMaximize}
               className="p-1 hover:bg-white/20 rounded transition-colors"
               title={isMaximized ? "Restore window" : "Maximize window"}
             >
-              <Maximize2 className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
             </button>
             <button
               onClick={() => setIsOpen(false)}
@@ -1379,7 +1435,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                     <span>{selectedArticle.estimatedTime}</span>
                     <span>•</span>
                     <div className="flex items-center">
-                      <Star className="w-3 h-3 text-yellow-400 fill-current mr-0.5" />
+                      <ImageIcon className="w-2.5 h-2.5 text-yellow-400 fill-current mr-0.5" />
                       <span>{selectedArticle.rating}</span>
                     </div>
                   </div>
@@ -1400,7 +1456,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   className="flex items-center space-x-1 px-2 py-1 bg-teal-500 text-white rounded text-xs hover:bg-teal-600"
                   title="Ask Sofia about this article"
                 >
-                  <MessageCircle className="w-3 h-3" />
+                  <ImageIcon className="w-3 h-3" />
                   <span>Ask Sofia</span>
                 </button>
                 <button
@@ -1408,7 +1464,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   className="flex items-center space-x-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                   title="Download article"
                 >
-                  <Download className="w-3 h-3" />
+                  <ImageIcon className="w-3 h-3" />
                   <span>Download</span>
                 </button>
                 <button
@@ -1423,7 +1479,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                   }`}
                   title={selectedArticle.bookmarked ? "Remove bookmark" : "Bookmark article"}
                 >
-                  <Bookmark className={`w-3 h-3 ${selectedArticle.bookmarked ? 'fill-current' : ''}`} />
+                  <ImageIcon className={`w-3 h-3 ${selectedArticle.bookmarked ? 'fill-current' : ''}`} />
                   <span>{selectedArticle.bookmarked ? 'Saved' : 'Save'}</span>
                 </button>
               </div>
@@ -1469,27 +1525,27 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
             <div
               key={msg.id}
               className={`p-3 rounded-lg shadow-sm ${
-                msg.isUser 
+                msg.role === 'user' 
                   ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white ml-8 shadow-teal-200' 
                   : 'bg-white mr-8 border border-gray-200 shadow-gray-100'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <div className={`text-xs flex items-center space-x-1 ${msg.isUser ? 'text-teal-100' : 'text-gray-600'}`}>
-                  <span className="font-medium">{msg.isUser ? 'You' : 'Sofia'}</span>
+                <div className={`text-xs flex items-center space-x-1 ${msg.role === 'user' ? 'text-teal-100' : 'text-gray-600'}`}>
+                  <span className="font-medium">{msg.role === 'user' ? 'You' : 'Sofia'}</span>
                   <span>•</span>
                   <span>{msg.timestamp.toLocaleTimeString()}</span>
                   {msg.imageAnalysis && (
                     <>
                       <span>•</span>
-                      <Eye className="w-3 h-3" />
+                      <ImageIcon className="w-3 h-3" />
                       <span className="text-emerald-600 font-medium">Analysis</span>
                     </>
                   )}
                 </div>
-                {!msg.isUser && (
+                {msg.role !== 'user' && (
                   <button
-                    onClick={() => playingMessageId === msg.id ? stopSpeech() : speakText(msg.text, msg.id)}
+                    onClick={() => playingMessageId === msg.id ? stopSpeech() : speakText(msg.content, msg.id)}
                     className={`p-1.5 rounded-full transition-all shadow-sm ${
                       playingMessageId === msg.id 
                         ? 'bg-teal-500 text-white animate-pulse shadow-teal-200' 
@@ -1508,48 +1564,55 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               
               {msg.image && (
                 <div className="mb-3">
-                  <img 
+                  <Image 
                     src={msg.image} 
                     alt="Equipment analysis" 
-                    className="max-w-full h-auto rounded-lg border-2 border-gray-300 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => window.open(msg.image, '_blank')}
+                    width={300}
+                    height={200}
+                    className="rounded-lg"
                   />
                 </div>
               )}
               
-              <div className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.isUser ? 'text-white' : 'text-gray-800'}`}>
-                {msg.text}
+              <div className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                {msg.content}
               </div>
             </div>
           ))}
           {loading && (
             <div className="flex items-center space-x-2 text-teal-600 mr-8 p-3 bg-white rounded-lg border-2 border-teal-200 shadow-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <ImageIcon className="w-4 h-4 animate-spin" />
               <span className="text-xs font-medium">Sofia is thinking...</span>
-              {voiceEnabled && lastInputWasVoice && <Volume2 className="w-3 h-3 animate-bounce text-emerald-500" />}
+              {voiceEnabled && lastInputWasVoice && <ImageIcon className="w-3 h-3 animate-bounce text-emerald-500" />}
             </div>
           )}
         </div>
 
         {/* Image Preview */}
-        {imagePreview && (
+        {selectedImage && imagePreview && (
           <div className="p-4 border-t bg-gradient-to-r from-teal-50 to-emerald-50">
             <div className="flex items-start space-x-3">
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                className="w-16 h-16 object-cover rounded-lg border-2 border-teal-300"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">Ready for Sofia's analysis</p>
-                <p className="text-xs text-gray-600">I'll examine this image and help troubleshoot</p>
+              <div className="relative w-16 h-16">
+                <Image 
+                  src={imagePreview} 
+                  alt="Preview of uploaded image" 
+                  fill
+                  className="rounded-lg object-cover"
+                />
               </div>
-              <button
-                onClick={removeImage}
-                className="p-1 text-red-500 hover:bg-red-100 rounded-full"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex-1">
+                <p className="text-xs text-gray-600 mb-2">
+                  Image ready for analysis. Sofia will help identify any issues.
+                </p>
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-red-600 hover:text-red-700 text-xs font-medium flex items-center space-x-1"
+                  title="Remove image"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Remove</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1559,7 +1622,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
           <div className="p-3 border-t bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <Terminal className="w-4 h-4 text-purple-600" />
+                <ImageIcon className="w-4 h-4 text-purple-600" />
                 <h4 className="text-sm font-bold text-purple-700">Automated Fix Available</h4>
               </div>
               <button
@@ -1583,7 +1646,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                 className="flex items-center space-x-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                 title="Copy commands to clipboard"
               >
-                <Copy className="w-3 h-3" />
+                <ImageIcon className="w-3 h-3" />
                 <span>Copy Commands</span>
               </button>
               <button
@@ -1591,15 +1654,15 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                 className="flex items-center space-x-1 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
                 title="Download fix script"
               >
-                <Download className="w-3 h-3" />
+                <ImageIcon className="w-3 h-3" />
                 <span>Download Script</span>
               </button>
               <button
                 onClick={() => {
                   const fixMessage: Message = {
                     id: Date.now(),
-                    text: "🔧 I've generated an automated fix for your issue! Please:\n\n1. Copy the commands using the button above\n2. Open Command Prompt or PowerShell as Administrator\n3. Paste and run the commands\n4. Let me know if you need help with any step!\n\n⚠️ Always review commands before running them for security.",
-                    isUser: false,
+                    role: 'assistant',
+                    content: "🔧 I've generated an automated fix for your issue! Please:\n\n1. Copy the commands using the button above\n2. Open Command Prompt or PowerShell as Administrator\n3. Paste and run the commands\n4. Let me know if you need help with any step!\n\n⚠️ Always review commands before running them for security.",
                     timestamp: new Date()
                   }
                   setMessages(prev => [...prev, fixMessage])
@@ -1608,7 +1671,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                 className="flex items-center space-x-1 px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
                 title="Get guided help with the fix"
               >
-                <PlayCircle className="w-3 h-3" />
+                <ImageIcon className="w-3 h-3" />
                 <span>Guide Me</span>
               </button>
             </div>
@@ -1625,7 +1688,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
                 className="flex items-center space-x-2 px-3 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm"
                 title={showQuickHelp ? "Hide quick help" : "Show quick help"}
               >
-                <Search className="w-4 h-4" />
+                <ImageIcon className="w-4 h-4" />
                 <span>Quick Help</span>
               </button>
             </div>
@@ -1660,7 +1723,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               className="flex items-center space-x-1 px-2 py-1.5 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors text-xs"
               title="Take a photo"
             >
-              <Camera className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
               <span>Photo</span>
             </button>
             <button
@@ -1668,7 +1731,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               className="flex items-center space-x-1 px-2 py-1.5 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors text-xs"
               title="Upload an image"
             >
-              <Image className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
               <span>Upload</span>
             </button>
             <button
@@ -1680,7 +1743,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               }`}
               title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >
-              {isScreenSharing ? <StopCircle className="w-3 h-3" /> : <Monitor className="w-3 h-3" />}
+              {isScreenSharing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
               <span>{isScreenSharing ? 'Stop Share' : 'Screen'}</span>
             </button>
             <button
@@ -1688,18 +1751,18 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               className="flex items-center space-x-1 px-2 py-1.5 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors text-xs"
               title="Generate automated fix"
             >
-              <Terminal className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
               <span>Auto-Fix</span>
             </button>
             {selectedImage && (
               <div className="flex items-center text-xs text-emerald-700 bg-emerald-100 px-2 py-1.5 rounded-md border border-emerald-300">
-                <Eye className="w-3 h-3 mr-1" />
+                <ImageIcon className="w-3 h-3 mr-1" />
                 <span>Image Ready!</span>
               </div>
             )}
             {isScreenSharing && (
               <div className="flex items-center text-xs text-orange-700 bg-orange-100 px-2 py-1.5 rounded-md border border-orange-300">
-                <Monitor className="w-3 h-3 mr-1" />
+                <ImageIcon className="w-3 h-3 mr-1" />
                 <span>Sharing Screen</span>
               </div>
             )}
@@ -1730,7 +1793,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               } text-white shadow-sm`}
               title={isListening ? "Stop voice input" : "Start voice input"}
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {isListening ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </button>
             <button 
               onClick={() => sendMessage()}
@@ -1774,31 +1837,25 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
               )}
               {showAutomationPanel && (
                 <div className="flex items-center space-x-1 text-purple-600 font-medium">
-                  <Terminal className="w-3 h-3" />
+                  <ImageIcon className="w-3 h-3" />
                   <span>Auto-fix ready</span>
                 </div>
               )}
               {isScreenSharing && (
                 <div className="flex items-center space-x-1 text-orange-600 font-medium">
-                  <Monitor className="w-3 h-3" />
-                  <span>Screen sharing active</span>
+                  <ImageIcon className="w-3 h-3" />
+                  <span>Sharing Screen</span>
                 </div>
               )}
               {voiceEnabled && (
                 <div className="flex items-center space-x-1 text-teal-600 font-medium">
-                  <Volume2 className="w-3 h-3" />
+                  <ImageIcon className="w-3 h-3" />
                   <span>Sofia voice ready</span>
-                </div>
-              )}
-              {lastInputWasVoice && voiceEnabled && (
-                <div className="flex items-center space-x-1 text-emerald-600 font-medium">
-                  <Sparkles className="w-3 h-3" />
-                  <span>Sofia will speak response</span>
                 </div>
               )}
             </div>
             <div className="flex items-center space-x-1 text-gray-500">
-              <Zap className="w-3 h-3" />
+              <ImageIcon className="w-3 h-3" />
               <span>AI Powered by IRCAD</span>
             </div>
           </div>

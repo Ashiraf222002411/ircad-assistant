@@ -1,7 +1,7 @@
 // src/lib/supabase.ts
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, Session } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://umfhgjenqkrlzneivxjj.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZmhnamVucWtybHpuZWl2eGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ0MzM4MzQsImV4cCI6MjA1MDAwOTgzNH0.CPM' // Replace with your FULL key
@@ -83,7 +83,7 @@ export const authService = {
   },
 
   // Listen to auth changes
-  onAuthStateChange(callback: (event: string, session: any) => void) {
+  onAuthStateChange(callback: (event: string, session: Session | null) => void) {
     return supabase.auth.onAuthStateChange(callback)
   }
 }

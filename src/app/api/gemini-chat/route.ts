@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, image, systemPrompt } = await request.json()
+    const { message, image } = await request.json()
 
     if (!process.env.GOOGLE_API_KEY) {
       return NextResponse.json({ 
@@ -75,37 +75,35 @@ User: ${message}`
     
     return NextResponse.json({ response: text })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Gemini API Error:', error)
     
     // Provide specific error messages based on error type
     let errorMessage = 'I encountered an issue analyzing your request. '
     
-    if (error.message?.includes('API key')) {
-      errorMessage += 'API configuration error. Please contact IT support.'
-    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
-      errorMessage += 'AI service temporarily unavailable due to high usage. Please try again in a few minutes.'
-    } else if (error.message?.includes('image') || error.message?.includes('vision')) {
-      errorMessage += 'Image analysis failed. Please try:\n• Using a clearer, well-lit photo\n• A smaller image file\n• Different image format (JPG/PNG)'
-    } else if (error.message?.includes('safety') || error.message?.includes('blocked')) {
-      errorMessage += 'Content blocked for safety reasons. Please ensure images are of technical equipment only.'
-    } else {
-      errorMessage += 'Please check your connection and try again. If the issue persists, contact IT support.'
+    // Check if error is an instance of Error to access message property
+    if (error instanceof Error) {
+      if (error.message?.includes('API key')) {
+        errorMessage += 'API configuration error. Please contact IT support.'
+      } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+        errorMessage += 'AI service temporarily unavailable due to high usage. Please try again in a few minutes.'
+      } else if (error.message?.includes('image') || error.message?.includes('vision')) {
+        errorMessage += 'Image analysis failed. Please try:\n• Using a clearer, well-lit photo\n• A smaller image file\n• Different image format (JPG/PNG)'
+      } else if (error.message?.includes('safety') || error.message?.includes('blocked')) {
+        errorMessage += 'Content blocked for safety reasons. Please ensure images are of technical equipment only.'
+      } else {
+        errorMessage += 'Please check your connection and try again. If the issue persists, contact IT support.'
+      }
     }
     
     return NextResponse.json({ 
-      response: `Technical Support Error
-
-${errorMessage}
-
-Error Code: ${error.name || 'Unknown'}
-Timestamp: ${new Date().toISOString()}`
+      response: `Technical Support Error\n\n${errorMessage}\n\nError Code: ${error instanceof Error ? error.name : 'Unknown'}\nTimestamp: ${new Date().toISOString()}`
     })
   }
 }
 
 // Handle CORS for development
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

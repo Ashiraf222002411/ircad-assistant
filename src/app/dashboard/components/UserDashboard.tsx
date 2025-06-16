@@ -1,58 +1,41 @@
 'use client'
 
-import React from 'react'
-import { 
-  MessageCircle, 
-  BookOpen, 
-  Wrench, 
-  BarChart3, 
-  Settings, 
-  Bell, 
-  Search, 
-  User, 
-  LogOut, 
-  Camera, 
-  Monitor, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  TrendingUp, 
-  Zap, 
-  Users, 
-  FileText, 
-  Video, 
-  Phone, 
-  Calendar, 
-  Download, 
-  Upload, 
-  Shield, 
-  Activity, 
-  Star, 
-  ArrowRight, 
-  Plus, 
-  Eye, 
+import React, { useState } from 'react'
+import {
+  MessageCircle,
+  BookOpen,
+  Wrench,
+  BarChart3,
+  Settings,
+  Bell,
+  Search,
+  User,
+  LogOut,
+  Camera,
+  Monitor,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  Zap,
+  Users,
+  FileText,
+  Video,
+  Mic,
+  Activity,
+  Star,
+  ArrowRight,
+  Plus,
   Bookmark,
   HelpCircle,
-  Smartphone,
   Wifi,
-  WifiOff,
   PlayCircle,
-  PauseCircle,
-  Volume2,
-  Mic,
-  Headphones,
-  Database,
-  Globe,
-  Lock,
-  Unlock,
-  RefreshCw,
-  ChevronRight,
-  Maximize2,
-  MinusCircle,
-  CheckSquare,
-  Square,
-  Wrench as Tool
+  Wrench as Tool,
+  Shield
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface DashboardCard {
   id: string
@@ -109,10 +92,9 @@ interface UserDashboardProps {
 }
 
 export default function UserDashboard({ user }: UserDashboardProps) {
-  const [searchQuery, setSearchQuery] = React.useState('')
-  const [selectedCards, setSelectedCards] = React.useState<string[]>([])
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid')
-  const [showOnboarding, setShowOnboarding] = React.useState(false)
+  const { logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const platformFeatures: DashboardCard[] = [
     {
@@ -430,6 +412,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   <p className="text-xs text-gray-500">{user.role}</p>
                 </div>
                 <button 
+                  onClick={logout}
                   className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Logout"
                 >
@@ -466,7 +449,7 @@ export default function UserDashboard({ user }: UserDashboardProps) {
               </div>
               <div className="hidden lg:block">
                 <button
-                  onClick={() => setShowOnboarding(true)}
+                  onClick={() => console.log('Quick Tour')}
                   className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
                   title="Take a quick tour"
                 >
@@ -479,25 +462,24 @@ export default function UserDashboard({ user }: UserDashboardProps) {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {quickStats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <div className={`flex items-center space-x-1 ${stat.color}`}>
-                    {stat.icon}
-                    <span className="text-sm font-medium">{stat.change}</span>
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {quickStats.map((stat) => (
+            <Card key={stat.label} className="flex items-center space-x-2">
+              <CardHeader className="flex items-center space-x-2">
+                <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  {stat.icon}
+                  <div>
+                    <div className="text-lg font-bold">{stat.value}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{stat.change}</div>
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${stat.color.replace('text-', 'bg-').replace('600', '100')}`}>
-                  {stat.icon}
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
-        </div>
+        </section>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Features */}
@@ -559,9 +541,9 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   {feature.quickActions && (
                     <div className="flex flex-wrap gap-2 mb-4">
                       {feature.quickActions.map((action, index) => (
-                        <button
+                        <Button
                           key={index}
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.stopPropagation()
                             action.action()
                           }}
@@ -570,16 +552,16 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                         >
                           {action.icon}
                           <span>{action.label}</span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
-                    <button className={`flex items-center space-x-2 ${feature.color} hover:underline text-sm font-medium`}>
+                    <Button className={`flex items-center space-x-2 ${feature.color} hover:underline text-sm font-medium`}>
                       <span>Open Feature</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -618,9 +600,9 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   </div>
                 ))}
               </div>
-              <button className="w-full mt-4 text-teal-600 hover:text-teal-700 text-sm font-medium">
+              <Button className="w-full mt-4 text-teal-600 hover:text-teal-700 text-sm font-medium">
                 View all activity →
-              </button>
+              </Button>
             </div>
 
             {/* System Status */}
@@ -642,9 +624,9 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                   </div>
                 ))}
               </div>
-              <button className="w-full mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">
+              <Button className="w-full mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">
                 View detailed status →
-              </button>
+              </Button>
             </div>
 
             {/* Quick Actions */}
@@ -654,34 +636,34 @@ export default function UserDashboard({ user }: UserDashboardProps) {
                 Quick Actions
               </h4>
               <div className="space-y-2">
-                <button 
+                <Button
                   className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
                   title="Ask Sofia AI Assistant"
                 >
                   <MessageCircle className="w-4 h-4 text-emerald-600" />
                   <span className="text-sm font-medium">Ask Sofia</span>
-                </button>
-                <button 
+                </Button>
+                <Button
                   className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
                   title="Report Technical Issue"
                 >
                   <AlertCircle className="w-4 h-4 text-red-600" />
                   <span className="text-sm font-medium">Report Issue</span>
-                </button>
-                <button 
+                </Button>
+                <Button
                   className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
                   title="Search Knowledge Base"
                 >
                   <BookOpen className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium">Search Guides</span>
-                </button>
-                <button 
+                </Button>
+                <Button
                   className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
                   title="Open Team Chat"
                 >
                   <Users className="w-4 h-4 text-purple-600" />
                   <span className="text-sm font-medium">Team Chat</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
