@@ -14,7 +14,7 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center;
+    @apply bg-gradient-to-r from-customBlue-600 to-customPurple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center;
   }
   
   .btn-secondary {
