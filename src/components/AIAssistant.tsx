@@ -1,60 +1,61 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { 
   Send,
   Mic,
-  StopCircle,
-  Image as ImageIcon,
-  Loader2,
   X,
-  ChevronDown,
-  ChevronUp,
-  Settings,
-  Info,
-  AlertCircle,
-  CheckCircle,
-  BookOpen,
-  Filter,
-  ChevronRight,
-  ExternalLink,
   Camera,
   Monitor,
   Volume2,
-  MessageCircle,
-  Book,
-  Users,
-  Sparkles,
-  Plus,
-  History,
-  Search,
-  Bookmark,
-  Star,
-  ArrowRight,
-  User,
-  Download,
-  Pause,
   Play,
+  Pause,
   Trash2,
-  Terminal,
-  Copy,
-  PlayCircle,
-  Zap,
-  Shield,
-  FileText,
-  Wrench
+  Image as ImageIcon
 } from 'lucide-react'
 
 // Add type declarations for speech recognition
 declare global {
   interface Window {
-    webkitSpeechRecognition: any;
+    webkitSpeechRecognition: { new (): SpeechRecognition; prototype: SpeechRecognition; };
   }
 }
 
-type SpeechRecognition = any;
-type SpeechRecognitionEvent = any;
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  readonly isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  readonly transcript: string;
+  readonly confidence: number;
+}
 
 interface Message {
   id: number
@@ -104,6 +105,13 @@ interface KnowledgeCategory {
   articleCount: number
 }
 
+interface GeneratedFix {
+  id: number;
+  analysis: string;
+  problemDescription?: string;
+  timestamp: Date;
+}
+
 export default function EnhancedIRCADAssistant() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
@@ -116,25 +124,7 @@ export default function EnhancedIRCADAssistant() {
     {
       id: 1,
       role: 'assistant',
-      content: `Hello! I'm Sofia, your IRCAD AI Assistant! 👋
-
-I'm here to help you with any technical issues using:
-
-🔍 Visual Analysis - Upload photos of equipment problems
-🎤 Voice Chat - Talk to me naturally  
-💬 Text Support - Type your questions
-🎯 Quick Help - Select common issue categories
-🖥️ Screen Sharing - Show me your screen for real-time help
-🤖 Auto-Fix - I can generate automated solutions
-
-I can assist with:
-• Medical equipment (cameras, laparoscopes, surgical robots)
-• Computer and software problems  
-• Network and connectivity issues
-• Training and procedures
-• Any other technical challenges
-
-How can I help you today? Feel free to speak, type, share your screen, or show me a picture! ✨`,
+      content: `Hello! I'm Sofia, your IRCAD AI Assistant! 👋\n\nI'm here to help you with any technical issues using:\n\n🔍 Visual Analysis - Upload photos of equipment problems\n🎤 Voice Chat - Talk to me naturally  \n💬 Text Support - Type your questions\n🎯 Quick Help - Select common issue categories\n🖥️ Screen Sharing - Show me your screen for real-time help\n🤖 Auto-Fix - I can generate automated solutions\n\nI can assist with:\n• Medical equipment (cameras, laparoscopes, surgical robots)\n• Computer and software problems  \n• Network and connectivity issues\n• Training and procedures\n• Any other technical challenges\n\nHow can I help you today? Feel free to speak, type, share your screen, or show me a picture! ✨`,
       timestamp: new Date()
     }
   ])
@@ -153,14 +143,12 @@ How can I help you today? Feel free to speak, type, share your screen, or show m
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const [isListening, setIsListening] = useState(false)
   const [showQuickHelp, setShowQuickHelp] = useState(false)
-  const [currentSpeech, setCurrentSpeech] = useState<SpeechSynthesisUtterance | null>(null)
   const [playingMessageId, setPlayingMessageId] = useState<number | null>(null)
   const [lastInputWasVoice, setLastInputWasVoice] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
-  const [screenCapture, setScreenCapture] = useState<string | null>(null)
   const [showAutomationPanel, setShowAutomationPanel] = useState(false)
-  const [generatedFix, setGeneratedFix] = useState<any>(null)
+  const [generatedFix, setGeneratedFix] = useState<GeneratedFix | null>(null)
   const [knowledgeSearchTerm, setKnowledgeSearchTerm] = useState('')
   const [selectedKnowledgeCategory, setSelectedKnowledgeCategory] = useState<string>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -225,52 +213,7 @@ How can I help you today? Feel free to speak, type, share your screen, or show m
       id: '1',
       title: 'Axiocam Camera Calibration Guide',
       category: 'equipment',
-      content: `# Axiocam Camera Calibration Guide
-
-## Overview
-This guide will walk you through the complete calibration process for Axiocam cameras used in IRCAD facilities.
-
-## Prerequisites
-- Administrator access to the workstation
-- Axiocam camera connected and powered
-- Zen software installed and updated
-- Calibration target (provided with camera)
-
-## Step-by-Step Calibration
-
-### 1. Initial Setup
-1. Launch Zen software as Administrator
-2. Navigate to **Acquisition** → **Camera Settings**
-3. Verify camera is detected in device list
-4. Set exposure time to **Auto**
-
-### 2. White Balance Calibration
-1. Place white calibration target under microscope
-2. Adjust illumination to 50% intensity
-3. Click **White Balance** → **Auto Calibration**
-4. Wait for completion (typically 30-60 seconds)
-
-### 3. Color Calibration
-1. Replace white target with color calibration target
-2. Select **Color Calibration** from Tools menu
-3. Follow on-screen prompts for each color patch
-4. Save calibration profile with date stamp
-
-### 4. Verification
-1. Capture test image with known sample
-2. Compare with reference image
-3. Check color accuracy and sharpness
-4. Repeat calibration if results are unsatisfactory
-
-## Troubleshooting
-- **Camera not detected**: Check USB connections and driver installation
-- **Poor color accuracy**: Ensure proper illumination and clean optics
-- **Calibration fails**: Restart Zen software and try again
-
-## Maintenance Schedule
-- Weekly: Quick white balance check
-- Monthly: Full calibration procedure
-- Quarterly: Professional service check`,
+      content: `# Axiocam Camera Calibration Guide\n\n## Overview\nThis guide will walk you through the complete calibration process for Axiocam cameras used in IRCAD facilities.\n\n## Prerequisites\n- Administrator access to the workstation\n- Axiocam camera connected and powered\n- Zen software installed and updated\n- Calibration target (provided with camera)\n\n## Step-by-Step Calibration\n\n### 1. Initial Setup\n1. Launch Zen software as Administrator\n2. Navigate to **Acquisition** → **Camera Settings**\n3. Verify camera is detected in device list\n4. Set exposure time to **Auto**\n\n### 2. White Balance Calibration\n1. Place white calibration target under microscope\n2. Adjust illumination to 50% intensity\n3. Click **White Balance** → **Auto Calibration**\n4. Wait for completion (typically 30-60 seconds)\n\n### 3. Color Calibration\n1. Replace white target with color calibration target\n2. Select **Color Calibration** from Tools menu\n3. Follow on-screen prompts for each color patch\n4. Save calibration profile with date stamp\n\n### 4. Verification\n1. Capture test image with known sample\n2. Compare with reference image\n3. Check color accuracy and sharpness\n4. Repeat calibration if results are unsatisfactory\n\n## Troubleshooting\n- **Camera not detected**: Check USB connections and driver installation\n- **Poor color accuracy**: Ensure proper illumination and clean optics\n- **Calibration fails**: Restart Zen software and try again\n\n## Maintenance Schedule\n- Weekly: Quick white balance check\n- Monthly: Full calibration procedure\n- Quarterly: Professional service check`,
       tags: ['axiocam', 'calibration', 'camera', 'zen', 'microscopy'],
       lastUpdated: new Date(2024, 11, 15),
       views: 1247,
@@ -283,42 +226,7 @@ This guide will walk you through the complete calibration process for Axiocam ca
       id: '2',
       title: 'Zen Software Troubleshooting',
       category: 'software',
-      content: `# Zen Software Troubleshooting Guide
-
-## Common Issues and Solutions
-
-### Startup Problems
-**Issue**: Zen won't start or crashes on startup
-**Solutions**:
-1. Run as Administrator
-2. Check Windows compatibility mode
-3. Clear temporary files: C:\Users\[username]\AppData\Local\Zeiss
-4. Reinstall Visual C++ Redistributables
-
-### Performance Issues
-**Issue**: Slow image acquisition or processing
-**Solutions**:
-1. Close unnecessary applications
-2. Check available RAM (minimum 8GB recommended)
-3. Verify hard drive space (minimum 10GB free)
-4. Update graphics drivers
-
-### Camera Connection Issues
-**Issue**: Camera not detected or disconnects frequently
-**Solutions**:
-1. Check USB cable and ports
-2. Update camera drivers
-3. Disable USB power management
-4. Try different USB 3.0 port
-
-## Error Codes
-- **Error 0x80004005**: Permission issue - run as Administrator
-- **Error 0x80070005**: Access denied - check file permissions
-- **Error 0xC0000135**: Missing .NET Framework
-
-## Advanced Troubleshooting
-Use Windows Event Viewer to check for detailed error logs under:
-Applications and Services Logs → Zeiss → ZEN`,
+      content: `# Zen Software Troubleshooting Guide\n\n## Common Issues and Solutions\n\n### Startup Problems\n**Issue**: Zen won't start or crashes on startup\n**Solutions**:\n1. Run as Administrator\n2. Check Windows compatibility mode\n3. Clear temporary files: C:\Users\[username]\AppData\Local\Zeiss\n4. Reinstall Visual C++ Redistributables\n\n### Performance Issues\n**Issue**: Slow image acquisition or processing\n**Solutions**:\n1. Close unnecessary applications\n2. Check available RAM (minimum 8GB recommended)\n3. Verify hard drive space (minimum 10GB free)\n4. Update graphics drivers\n\n### Camera Connection Issues\n**Issue**: Camera not detected or disconnects frequently\n**Solutions**:\n1. Check USB cable and ports\n2. Update camera drivers\n3. Disable USB power management\n4. Try different USB 3.0 port\n\n## Error Codes\n- **Error 0x80004005**: Permission issue - run as Administrator\n- **Error 0x80070005**: Access denied - check file permissions\n- **Error 0xC0000135**: Missing .NET Framework\n\n## Advanced Troubleshooting\nUse Windows Event Viewer to check for detailed error logs under:\nApplications and Services Logs → Zeiss → ZEN`,
       tags: ['zen', 'software', 'troubleshooting', 'startup', 'performance'],
       lastUpdated: new Date(2024, 11, 10),
       views: 892,
@@ -331,39 +239,7 @@ Applications and Services Logs → Zeiss → ZEN`,
       id: '3',
       title: 'Network Configuration for Medical Devices',
       category: 'network',
-      content: `# Network Configuration for Medical Devices
-
-## IRCAD Network Architecture
-
-### VLAN Configuration
-- **VLAN 10**: Administrative network (192.168.10.0/24)
-- **VLAN 20**: Medical devices (192.168.20.0/24)
-- **VLAN 30**: Research equipment (192.168.30.0/24)
-- **VLAN 40**: Guest network (192.168.40.0/24)
-
-### Device IP Assignment
-Medical devices should be configured with static IPs in the 192.168.20.x range:
-- Axiocam systems: 192.168.20.10-50
-- Surgical robots: 192.168.20.51-70
-- Monitoring equipment: 192.168.20.71-90
-
-### Security Protocols
-1. **WPA3-Enterprise** for wireless connections
-2. **802.1X** authentication for wired connections
-3. **Firewall rules** limiting inter-VLAN communication
-4. **Regular security audits** and penetration testing
-
-### Troubleshooting Network Issues
-1. **ping** test to verify connectivity
-2. **ipconfig /all** to check IP configuration
-3. **nslookup** to verify DNS resolution
-4. **telnet** to test specific port connectivity
-
-## Best Practices
-- Use dedicated network switches for medical equipment
-- Implement network segmentation for security
-- Regular monitoring of network performance
-- Backup configurations regularly`,
+      content: `# Network Configuration for Medical Devices\n\n## IRCAD Network Architecture\n\n### VLAN Configuration\n- **VLAN 10**: Administrative network (192.168.10.0/24)\n- **VLAN 20**: Medical devices (192.168.20.0/24)\n- **VLAN 30**: Research equipment (192.168.30.0/24)\n- **VLAN 40**: Guest network (192.168.40.0/24)\n\n### Device IP Assignment\nMedical devices should be configured with static IPs in the 192.168.20.x range:\n- Axiocam systems: 192.168.20.10-50\n- Surgical robots: 192.168.20.51-70\n- Monitoring equipment: 192.168.20.71-90\n\n### Security Protocols\n1. **WPA3-Enterprise** for wireless connections\n2. **802.1X** authentication for wired connections\n3. **Firewall rules** limiting inter-VLAN communication\n4. **Regular security audits** and penetration testing\n\n### Troubleshooting Network Issues\n1. **ping** test to verify connectivity\n2. **ipconfig /all** to check IP configuration\n3. **nslookup** to verify DNS resolution\n4. **telnet** to test specific port connectivity\n\n## Best Practices\n- Use dedicated network switches for medical equipment\n- Implement network segmentation for security\n- Regular monitoring of network performance\n- Regular backup configurations`,
       tags: ['network', 'VLAN', 'security', 'medical-devices', 'configuration'],
       lastUpdated: new Date(2024, 11, 8),
       views: 654,
@@ -376,59 +252,7 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
       id: '4',
       title: 'Laparoscope Maintenance and Care',
       category: 'equipment',
-      content: `# Laparoscope Maintenance and Care
-
-## Daily Maintenance
-
-### Pre-Use Inspection
-1. **Visual inspection** for cracks or damage
-2. **Light transmission test** - check for dark spots
-3. **Angulation test** - verify smooth movement
-4. **Leak test** - submerge in sterile water
-
-### Post-Use Cleaning
-1. **Immediate pre-cleaning** - remove gross contamination
-2. **Manual cleaning** with enzymatic detergent
-3. **Ultrasonic cleaning** for detailed cleaning
-4. **High-level disinfection** or sterilization
-
-## Weekly Maintenance
-
-### Comprehensive Inspection
-- Check fiber optic bundles for broken fibers
-- Test all electrical connections
-- Verify proper storage in protective cases
-- Document any issues in maintenance log
-
-### Performance Testing
-- Light intensity measurement
-- Image quality assessment
-- Color accuracy verification
-- Focus performance check
-
-## Troubleshooting Common Issues
-
-### Dim or Dark Image
-**Causes**: Broken fiber optics, faulty light source, dirty lens
-**Solutions**: 
-1. Check light source bulb
-2. Inspect fiber optic cable
-3. Clean all lens surfaces
-4. Test with different light source
-
-### Poor Image Quality
-**Causes**: Contaminated lens, improper white balance, damaged optics
-**Solutions**:
-1. Clean with appropriate lens solution
-2. Recalibrate white balance
-3. Check for physical damage
-4. Professional service if needed
-
-## Storage and Transport
-- Always use protective cases
-- Avoid extreme temperatures
-- Store in clean, dry environment
-- Use lens caps when not in use`,
+      content: `# Laparoscope Maintenance and Care\n\n## Daily Maintenance\n\n### Pre-Use Inspection\n1. **Visual inspection** for cracks or damage\n2. **Light transmission test** - check for dark spots\n3. **Angulation test** - verify smooth movement\n4. **Leak test** - submerge in sterile water\n\n### Post-Use Cleaning\n1. **Immediate pre-cleaning** - remove gross contamination\n2. **Manual cleaning** with enzymatic detergent\n3. **Ultrasonic cleaning** for detailed cleaning\n4. **High-level disinfection** or sterilization\n\n## Weekly Maintenance\n\n### Comprehensive Inspection\n- Check fiber optic bundles for broken fibers\n- Test all electrical connections\n- Verify proper storage in protective cases\n- Document any issues in maintenance log\n\n### Performance Testing\n- Light intensity measurement\n- Image quality assessment\n- Color accuracy verification\n- Focus performance check\n\n## Troubleshooting Common Issues\n\n### Dim or Dark Image\n**Causes**: Broken fiber optics, faulty light source, dirty lens\n**Solutions**: \n1. Check light source bulb\n2. Inspect fiber optic cable\n3. Clean all lens surfaces\n4. Test with different light source\n\n### Poor Image Quality\n**Causes**: Contaminated lens, improper white balance, damaged optics\n**Solutions**:\n1. Clean with appropriate lens solution\n2. Recalibrate white balance\n3. Check for physical damage\n4. Professional service if needed\n\n## Storage and Transport\n- Always use protective cases\n- Avoid extreme temperatures\n- Store in clean, dry environment\n- Use lens caps when not in use`,
       tags: ['laparoscope', 'maintenance', 'cleaning', 'inspection', 'troubleshooting'],
       lastUpdated: new Date(2024, 11, 5),
       views: 2156,
@@ -441,61 +265,7 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
       id: '5',
       title: 'Emergency Procedures for Equipment Failure',
       category: 'procedures',
-      content: `# Emergency Procedures for Equipment Failure
-
-## Immediate Response Protocol
-
-### Step 1: Assess the Situation
-- **Patient safety first** - ensure no immediate danger
-- **Identify failed equipment** - note specific device and error
-- **Document failure time** - record exact time of failure
-- **Notify team** - alert relevant personnel immediately
-
-### Step 2: Implement Backup Procedures
-- **Activate backup systems** - switch to redundant equipment
-- **Manual procedures** - revert to non-electronic methods if safe
-- **Adjust surgical plan** - modify approach based on available tools
-- **Communicate changes** - keep entire team informed
-
-## Equipment-Specific Procedures
-
-### Surgical Robot Failure
-1. **Emergency stop** - activate red emergency button
-2. **Manual mode** - switch to direct manipulation if possible
-3. **Backup instruments** - prepare conventional surgical tools
-4. **Technical support** - contact manufacturer immediately
-
-### Imaging System Failure
-1. **Switch to backup camera** - if available
-2. **Alternative visualization** - use direct vision methods
-3. **Document workaround** - record alternative approach
-4. **Post-procedure analysis** - review what went wrong
-
-### Network Connectivity Loss
-1. **Local storage** - save data to local drives
-2. **Manual documentation** - paper-based recording
-3. **Isolated operation** - continue with offline systems
-4. **Gradual restoration** - systematically restore connections
-
-## Post-Incident Protocol
-
-### Immediate Actions
-1. **Complete documentation** - detailed incident report
-2. **Equipment isolation** - remove failed equipment from service
-3. **Safety review** - assess if protocols worked effectively
-4. **Stakeholder notification** - inform management and quality assurance
-
-### Follow-up Actions
-1. **Root cause analysis** - determine exact cause of failure
-2. **Preventive measures** - implement changes to prevent recurrence
-3. **Staff training** - update procedures based on lessons learned
-4. **Equipment maintenance** - review and update maintenance schedules
-
-## Contact Information
-- **Emergency Technical Support**: ext. 911
-- **Equipment Manufacturer Hotlines**: See device manuals
-- **IRCAD IT Support**: ext. 247
-- **Safety Officer**: ext. 199`,
+      content: `# Emergency Procedures for Equipment Failure\n\n## Immediate Response Protocol\n\n### Step 1: Assess the Situation\n- **Patient safety first** - ensure no immediate danger\n- **Identify failed equipment** - note specific device and error\n- **Document failure time** - record exact time of failure\n- **Notify team** - alert relevant personnel immediately\n\n### Step 2: Implement Backup Procedures\n- **Activate backup systems** - switch to redundant equipment\n- **Manual procedures** - revert to non-electronic methods if safe\n- **Adjust surgical plan** - modify approach based on available tools\n- **Communicate changes** - keep entire team informed\n\n## Equipment-Specific Procedures\n\n### Surgical Robot Failure\n1. **Emergency stop** - activate red emergency button\n2. **Manual mode** - switch to direct manipulation if possible\n3. **Backup instruments** - prepare conventional surgical tools\n4. **Technical support** - contact manufacturer immediately\n\n### Imaging System Failure\n1. **Switch to backup camera** - if available\n2. **Alternative visualization** - use direct vision methods\n3. **Document workaround** - record alternative approach\n4. **Post-procedure analysis** - review what went wrong\n\n### Network Connectivity Loss\n1. **Local storage** - save data to local drives\n2. **Manual documentation** - paper-based recording\n3. **Isolated operation** - continue with offline systems\n4. **Gradual restoration** - systematically restore connections\n\n## Post-Incident Protocol\n\n### Immediate Actions\n1. **Complete documentation** - detailed incident report\n2. **Equipment isolation** - remove failed equipment from service\n3. **Safety review** - assess if protocols worked effectively\n4. **Stakeholder notification** - inform management and quality assurance\n\n### Follow-up Actions\n1. **Root cause analysis** - determine exact cause of failure\n2. **Preventive measures** - implement changes to prevent recurrence\n3. **Staff training** - update procedures based on lessons learned\n4. **Equipment maintenance** - review and update maintenance schedules\n\n## Contact Information\n- **Emergency Technical Support**: ext. 911\n- **Equipment Manufacturer Hotlines**: See device manuals\n- **IRCAD IT Support**: ext. 247\n- **Safety Officer**: ext. 199`,
       tags: ['emergency', 'procedures', 'safety', 'equipment-failure', 'protocol'],
       lastUpdated: new Date(2024, 11, 12),
       views: 1834,
@@ -508,7 +278,7 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
   ]
 
   // Voice synthesis with human-like female voice
-  const speakText = (text: string, messageId: number) => {
+  const speakText = useCallback((text: string, messageId: number) => {
     if (!voiceEnabled || !window.speechSynthesis) return
 
     window.speechSynthesis.cancel()
@@ -578,26 +348,22 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
 
     utterance.onstart = () => {
       setPlayingMessageId(messageId)
-      setCurrentSpeech(utterance)
     }
 
     utterance.onend = () => {
       setPlayingMessageId(null)
-      setCurrentSpeech(null)
     }
 
     utterance.onerror = () => {
       setPlayingMessageId(null)
-      setCurrentSpeech(null)
     }
 
     window.speechSynthesis.speak(utterance)
-  }
+  }, [voiceEnabled, setPlayingMessageId])
 
   const stopSpeech = () => {
     window.speechSynthesis.cancel()
     setPlayingMessageId(null)
-    setCurrentSpeech(null)
   }
 
   const toggleVoice = () => {
@@ -623,30 +389,32 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
   // Voice Recognition Setup
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition
+      const SpeechRecognition = window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition()
 
-      recognitionRef.current.continuous = false
-      recognitionRef.current.interimResults = false
-      recognitionRef.current.lang = 'en-US'
+      if (recognitionRef.current) {
+        recognitionRef.current.continuous = false
+        recognitionRef.current.interimResults = false
+        recognitionRef.current.lang = 'en-US'
 
-      recognitionRef.current.onstart = () => {
-        setIsListening(true)
-      }
+        recognitionRef.current.onstart = () => {
+          setIsListening(true)
+        }
 
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        const transcript = event.results[0][0].transcript
-        setInput(transcript)
-        setIsListening(false)
-        setLastInputWasVoice(true)
-      }
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+          const transcript = event.results[0][0].transcript
+          setInput(transcript)
+          setIsListening(false)
+          setLastInputWasVoice(true)
+        }
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false)
-      }
+        recognitionRef.current.onend = () => {
+          setIsListening(false)
+        }
 
-      recognitionRef.current.onerror = () => {
-        setIsListening(false)
+        recognitionRef.current.onerror = () => {
+          setIsListening(false)
+        }
       }
     }
   }, [])
@@ -713,7 +481,6 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
       setScreenStream(null)
     }
     setIsScreenSharing(false)
-    setScreenCapture(null)
 
     const stopMessage: Message = {
       id: Date.now(),
@@ -739,7 +506,6 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
         if (ctx) {
           ctx.drawImage(video, 0, 0)
           const screenshot = canvas.toDataURL('image/jpeg', 0.8)
-          setScreenCapture(screenshot)
           
           // Analyze the screenshot automatically
           analyzeScreenshot(screenshot)
@@ -758,21 +524,7 @@ Medical devices should be configured with static IPs in the 192.168.20.x range:
         body: JSON.stringify({
           message: "Please analyze this screen capture and provide technical support guidance. Look for any error messages, unusual interface elements, or issues that might need attention. Also suggest any automated fixes if applicable.",
           image: screenshot,
-          systemPrompt: `You are Sofia, providing real-time screen sharing support for IRCAD Africa.
-
-Analyze the screen capture and provide:
-1. What you observe on the screen
-2. Any issues or errors visible
-3. Specific suggestions for improvement
-4. Next steps for troubleshooting
-
-If you identify fixable technical issues, also suggest automated solutions like:
-- Commands to run
-- Configuration changes
-- Software installations
-- System repairs
-
-Be helpful and provide actionable insights. Focus on what you can actually see in the image.`
+          systemPrompt: `You are Sofia, providing real-time screen sharing support for IRCAD Africa.\n\nAnalyze the screen capture and provide:\n1. What you observe on the screen\n2. Any issues or errors visible\n3. Specific suggestions for improvement\n4. Next steps for troubleshooting\n\nIf you identify fixable technical issues, also suggest automated solutions like:\n- Commands to run\n- Configuration changes\n- Software installations\n- System repairs\n\nBe helpful and provide actionable insights. Focus on what you can actually see in the image.`
         })
       })
 
@@ -791,11 +543,11 @@ Be helpful and provide actionable insights. Focus on what you can actually see i
 
         // Check if response contains automation suggestions
         const hasAutomation = data.response.includes('```') || 
-                            data.response.toLowerCase().includes('command') ||
-                            data.response.toLowerCase().includes('script') ||
-                            data.response.toLowerCase().includes('fix') ||
-                            data.response.toLowerCase().includes('install') ||
-                            data.response.toLowerCase().includes('download')
+                              data.response.toLowerCase().includes('command') ||
+                              data.response.toLowerCase().includes('script') ||
+                              data.response.toLowerCase().includes('fix') ||
+                              data.response.toLowerCase().includes('install') ||
+                              data.response.toLowerCase().includes('download')
 
         // If automation suggestions found, show automation panel
         if (hasAutomation) {
@@ -835,27 +587,7 @@ Be helpful and provide actionable insights. Focus on what you can actually see i
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `Generate automated fix solutions for: ${problemDescription}`,
-          systemPrompt: `You are Sofia, an expert automation specialist for IRCAD Africa technical support.
-
-Generate practical automated solutions including:
-
-1. **Windows PowerShell/CMD Commands**
-2. **Registry Fixes** (if safe and necessary)
-3. **Configuration Files** 
-4. **Download Scripts**
-5. **Installation Commands**
-6. **System Repair Commands**
-
-Provide:
-- Clear code blocks for each solution
-- Safety warnings for risky operations
-- Step-by-step execution instructions
-- Alternative methods if primary fails
-- Verification commands to check if fix worked
-
-Focus on IRCAD equipment: Axiocam, Zen software, network issues, medical software problems.
-
-Format each solution clearly with headers and explanations.`
+          systemPrompt: `You are Sofia, an expert automation specialist for IRCAD Africa technical support.\n\nGenerate practical automated solutions including:\n\n1. **Windows PowerShell/CMD Commands**\n2. **Registry Fixes** (if safe and necessary)\n3. **Configuration Files** \n4. **Download Scripts**\n5. **Installation Commands**\n6. **System Repair Commands**\n\nProvide:\n- Clear code blocks for each solution\n- Safety warnings for risky operations\n- Step-by-step execution instructions\n- Alternative methods if primary fails\n- Verification commands to check if fix worked\n\nFocus on IRCAD equipment: Axiocam, Zen software, network issues, medical software problems.\n\nFormat each solution clearly with headers and explanations.`
         })
       })
 
@@ -969,13 +701,6 @@ Format each solution clearly with headers and explanations.`
     }
   }
 
-  const removeImage = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-    if (cameraInputRef.current) cameraInputRef.current.value = ''
-  }
-
   const sendMessage = async (messageText?: string) => {
     const textToSend = messageText || input
     if (!textToSend.trim() && !selectedImage && !isScreenSharing) return
@@ -1009,11 +734,7 @@ Format each solution clearly with headers and explanations.`
         body: JSON.stringify({
           message: textToSend || "Please analyze this image and provide technical diagnosis and troubleshooting steps.",
           image: imageData,
-          systemPrompt: `You are Sofia, a friendly and expert technical support specialist for IRCAD Africa. You have a warm, professional personality and help with all types of equipment and software issues.
-
-Respond as Sofia with a friendly, helpful tone. Keep responses clear and professional but with personality. You help with medical equipment, computers, network systems, scientific instruments, and any other technical systems.
-
-Provide practical solutions with a caring, supportive approach. Be encouraging and make users feel comfortable asking for help.`
+          systemPrompt: `You are Sofia, a friendly and expert technical support specialist for IRCAD Africa. You have a warm, professional personality and help with all types of equipment and software issues.\n\nRespond as Sofia with a friendly, helpful tone. Keep responses clear and professional but with personality. You help with medical equipment, computers, network systems, scientific instruments, and any other technical systems.\n\nProvide practical solutions with a caring, supportive approach. Be encouraging and make users feel comfortable asking for help.`
         })
       })
 
@@ -1068,7 +789,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
   }
 
   const startNewChat = () => {
-    setMessages([{
+    setMessages([{ 
       id: 1,
       role: 'assistant',
       content: "Hello! I'm Sofia, your IRCAD AI Assistant! How can I help you with your technical challenges today? ✨",
@@ -1146,10 +867,10 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
           <div className="p-2 border-b border-gray-200">
             <div className="flex items-center space-x-2 mb-2">
               <div className="w-6 h-6 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-md flex items-center justify-center">
-                <ImageIcon className="w-4 h-4 text-white" aria-hidden="true" />
+                <ImageIcon className="w-4 h-4" aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-xs">Sofia</h3>
+                <h3 className="font-bold text-xs">Sofia</h3>
                 <p className="text-xs text-gray-600">Support</p>
               </div>
             </div>
@@ -1622,7 +1343,7 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
           <div className="p-3 border-t bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <ImageIcon className="w-4 h-4 text-purple-600" />
+                <ImageIcon className="w-4 h-4" />
                 <h4 className="text-sm font-bold text-purple-700">Automated Fix Available</h4>
               </div>
               <button
@@ -1863,4 +1584,4 @@ Provide practical solutions with a caring, supportive approach. Be encouraging a
       </div>
     </div>
   )
-}
+} 
